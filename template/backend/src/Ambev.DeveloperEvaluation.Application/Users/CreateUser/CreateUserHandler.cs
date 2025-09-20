@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using MediatR;
-using FluentValidation;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Common.Security;
@@ -16,12 +15,6 @@ public class CreateUserHandler : IRequestHandler<CreateUserCommand, CreateUserRe
     private readonly IMapper _mapper;
     private readonly IPasswordHasher _passwordHasher;
 
-    /// <summary>
-    /// Initializes a new instance of CreateUserHandler
-    /// </summary>
-    /// <param name="userRepository">The user repository</param>
-    /// <param name="mapper">The AutoMapper instance</param>
-    /// <param name="validator">The validator for CreateUserCommand</param>
     public CreateUserHandler(IUserRepository userRepository, IMapper mapper, IPasswordHasher passwordHasher)
     {
         _userRepository = userRepository;
@@ -32,16 +25,8 @@ public class CreateUserHandler : IRequestHandler<CreateUserCommand, CreateUserRe
     /// <summary>
     /// Handles the CreateUserCommand request
     /// </summary>
-    /// <param name="command">The CreateUser command</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>The created user details</returns>
     public async Task<CreateUserResult> Handle(CreateUserCommand command, CancellationToken cancellationToken)
     {
-        var validator = new CreateUserCommandValidator();
-        var validationResult = await validator.ValidateAsync(command, cancellationToken);
-
-        if (!validationResult.IsValid)
-            throw new ValidationException(validationResult.Errors);
 
         var existingUser = await _userRepository.GetByEmailAsync(command.Email, cancellationToken);
         if (existingUser != null)

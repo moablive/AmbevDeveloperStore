@@ -1,9 +1,10 @@
-﻿using Ambev.DeveloperEvaluation.Domain.Repositories;
+﻿using Ambev.DeveloperEvaluation.Application.Common.Interfaces;
+using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Ambev.DeveloperEvaluation.ORM;
 using Ambev.DeveloperEvaluation.ORM.Repositories;
+using Ambev.DeveloperEvaluation.ORM.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Ambev.DeveloperEvaluation.IoC.ModuleInitializers;
@@ -14,5 +15,9 @@ public class InfrastructureModuleInitializer : IModuleInitializer
     {
         builder.Services.AddScoped<DbContext>(provider => provider.GetRequiredService<DefaultContext>());
         builder.Services.AddScoped<IUserRepository, UserRepository>();
+        builder.Services.AddScoped<ISaleRepository, SaleRepository>();
+        builder.Services.AddSingleton<IEventProducer, KafkaEventProducer>();
+        builder.Services.AddScoped<ISaleReadRepository, SaleReadRepository>();
+        builder.Services.AddHostedService<SaleEventConsumerService>();
     }
 }

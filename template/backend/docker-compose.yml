@@ -1,50 +1,124 @@
 version: '3.8'
 
+volumes:
+  postgres_data:
+  mongo_data:
+
 services:
+  # --- 1. Main Application (API) ---
   ambev.developerevaluation.webapi:
     container_name: ambev_developer_evaluation_webapi
     image: ${DOCKER_REGISTRY-}ambevdeveloperevaluationwebapi
     build:
       context: .
       dockerfile: src/Ambev.DeveloperEvaluation.WebApi/Dockerfile
+    depends_on:
+      ambev.developerevaluation.database:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      ambev.developerevaluation.nosql:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_HTTP_PORTS=8080
-      - ASPNETCORE_HTTPS_PORTS=8081
-    ports:
-      - "8080"
-      - "8081"
-    volumes:
-      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
-      - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
+      - ASPNETCORE_URLS=http://0.0.0.0:8080
+      - ConnectionStrings__DefaultConnection=Host=ambev.developerevaluation.database;Port=5432;Database=developer_evaluation;Username=developer;Password=ev@luAt10n
+      - Kafka__BootstrapServers=kafka:29092
+      - MongoDb__ConnectionString=mongodb://developer:ev%40luAt10n@ambev.developerevaluation.nosql:27017
+      - MongoDb__DatabaseName=developer_evaluation_read
+      - MongoDb__CollectionName=sales
 
+  # --- 2. Databases and Cache ---
   ambev.developerevaluation.database:
     container_name: ambev_developer_evaluation_database
     image: postgres:13
-
-    environment:
-      POSTGRES_DB: developer_evaluation
-      POSTGRES_USER: developer
-      POSTGRES_PASSWORD: ev@luAt10n
-    ports:
-      - "5432"
     restart: unless-stopped
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=developer_evaluation
+      - POSTGRES_USER=developer
+      - POSTGRES_PASSWORD=ev@luAt10n
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U developer -d developer_evaluation"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   ambev.developerevaluation.nosql:
-    container_name: ambev_developer_evaluation_nosql 
-    image: mongo:8.0    
-    environment:
-        MONGO_INITDB_ROOT_USERNAME: developer
-        MONGO_INITDB_ROOT_PASSWORD: ev@luAt10n
+    container_name: ambev_developer_evaluation_nosql
+    image: mongo:6.0
+    restart: unless-stopped
     ports:
-      - "27017"
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=developer
+      - MONGO_INITDB_ROOT_PASSWORD=ev@luAt10n
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --host localhost --eval 'db.adminCommand({ ping: 1 })' -u developer -p 'ev@luAt10n' --quiet"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   ambev.developerevaluation.cache:
-    container_name: ambev_developer_evaluation_cache 
-    image: redis:7.4.1-alpine     
+    container_name: ambev_developer_evaluation_cache
+    image: redis:7.4.1-alpine
     command: redis-server --requirepass ev@luAt10n
-    environment:
-       MONGO_INITDB_ROOT_USERNAME: developer
-       MONGO_INITDB_ROOT_PASSWORD: ev@luAt10n
     ports:
-       - "6379"
+      - "6379:6379"
+
+  # --- 3. Kafka Ecosystem ---
+  zookeeper:
+    container_name: zookeeper
+    image: confluentinc/cp-zookeeper:7.2.1
+    environment:
+      - ZOOKEEPER_CLIENT_PORT=2181
+      - ZOOKEEPER_TICK_TIME=2000
+    healthcheck:
+      test: ["CMD-SHELL", "zookeeper-shell localhost:2181 ls / > /dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    container_name: kafka
+    image: confluentinc/cp-kafka:7.2.1
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  kafdrop:
+    container_name: kafdrop
+    image: obsidiandynamics/kafdrop:latest
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "9000:9000"
+    environment:
+      - KAFKA_BROKERCONNECT=kafka:29092

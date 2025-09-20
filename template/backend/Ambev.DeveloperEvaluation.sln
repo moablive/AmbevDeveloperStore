@@ -52,6 +52,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C361795D-30EF-4513-B313-8622BE1AD313}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		wait-for-services.sh = wait-for-services.sh
 	EndProjectSection
 EndProject
 Global
