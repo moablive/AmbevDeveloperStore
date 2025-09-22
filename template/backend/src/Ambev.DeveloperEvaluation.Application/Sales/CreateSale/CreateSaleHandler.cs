@@ -38,9 +38,9 @@ namespace Ambev.DeveloperEvaluation.Application.Sales.CreateSale
                 SaleNumber = Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper(),
                 SaleDate = DateTime.UtcNow,
                 CustomerId = request.CustomerId,
-                CustomerName = customerName, // ALTERADO: Usa o nome do JSON
+                CustomerName = customerName,
                 BranchId = request.BranchId,
-                BranchName = branchName,     // ALTERADO: Usa o nome do JSON
+                BranchName = branchName,
                 IsCancelled = false
             };
 

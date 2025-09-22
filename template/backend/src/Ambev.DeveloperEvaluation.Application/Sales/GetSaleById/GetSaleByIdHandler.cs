@@ -1,4 +1,4 @@
-﻿using Ambev.DeveloperEvaluation.Application.Common.Interfaces; // ADICIONADO
+﻿using Ambev.DeveloperEvaluation.Application.Common.Interfaces;
 using AutoMapper;
 using MediatR;
 

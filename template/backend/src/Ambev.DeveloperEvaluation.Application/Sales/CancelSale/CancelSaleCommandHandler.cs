@@ -23,10 +23,10 @@ namespace Ambev.DeveloperEvaluation.Application.Sales.CancelSale
 
         public async Task Handle(CancelSaleCommand request, CancellationToken cancellationToken)
         {
-            // 1. Busca a venda no banco de dados
+            // Busca a venda no banco de dados
             var sale = await _saleRepository.GetByIdAsync(request.SaleId, cancellationToken);
 
-            // 2. Se não encontrar, lança exceção para o controller retornar 404
+            // Se não encontrar, lança exceção para o controller retornar 404
             if (sale == null)
             {
                 throw new KeyNotFoundException($"Venda com o ID {request.SaleId} não encontrada.");
