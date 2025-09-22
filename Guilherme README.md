@@ -78,7 +78,7 @@ O fluxo de criação de uma venda ilustra a interação entre as camadas:
 sequenceDiagram
     participant Client as Cliente
     participant Controller as SalesController
-    participant MediatR
+    participant MediatR as MediatR
     participant Handler as CreateSaleCommandHandler
     participant Sale as Entidade Sale
     participant Repo as ISaleRepository
@@ -87,7 +87,7 @@ sequenceDiagram
     participant Mongo as MongoDB
 
     Client->>+Controller: POST /api/sales
-    Controller->>MediatR: CreateSaleCommand
+    Controller->>+MediatR: CreateSaleCommand
     MediatR->>+Handler: Executa Handler
     Handler->>+Sale: Cria Sale
     Sale->>Sale: Calcula descontos, total
