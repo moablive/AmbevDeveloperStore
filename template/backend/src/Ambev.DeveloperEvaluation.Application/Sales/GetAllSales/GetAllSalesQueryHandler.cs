@@ -1,20 +1,21 @@
-﻿using Ambev.DeveloperEvaluation.Domain.Repositories;
+﻿using Ambev.DeveloperEvaluation.Application.Common.Interfaces;
 using MediatR;
 
 namespace Ambev.DeveloperEvaluation.Application.Sales.GetAllSales
 {
     public class GetAllSalesQueryHandler : IRequestHandler<GetAllSalesQuery, GetAllSalesResult>
     {
-        private readonly ISaleRepository _saleRepository;
+        private readonly ISaleReadRepository _saleReadRepository;
 
-        public GetAllSalesQueryHandler(ISaleRepository saleRepository)
+        public GetAllSalesQueryHandler(ISaleReadRepository saleReadRepository)
         {
-            _saleRepository = saleRepository;
+            _saleReadRepository = saleReadRepository;
         }
 
         public async Task<GetAllSalesResult> Handle(GetAllSalesQuery request, CancellationToken cancellationToken)
         {
-            var (sales, totalCount) = await _saleRepository.GetAllAsync(request.PageNumber, request.PageSize, request.OrderBy);
+            // 'OrderBy' => no Read Model.
+            var (sales, totalCount) = await _saleReadRepository.GetAllAsync(request.PageNumber, request.PageSize);
 
             return new GetAllSalesResult
             {

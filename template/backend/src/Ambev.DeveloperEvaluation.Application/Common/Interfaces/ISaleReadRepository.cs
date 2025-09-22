@@ -6,5 +6,6 @@ namespace Ambev.DeveloperEvaluation.Application.Common.Interfaces
     {
         Task UpsertAsync(Sale sale);
         Task<Sale?> GetByIdAsync(Guid id);
+        Task<(IEnumerable<Sale> Sales, int TotalCount)> GetAllAsync(int pageNumber, int pageSize);
     }
 }

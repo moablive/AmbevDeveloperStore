@@ -27,8 +27,15 @@ namespace Ambev.DeveloperEvaluation.ORM.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var bootstrap = _configuration["Kafka:BootstrapServers"] ?? "kafka:29092";
-            var topic = _configuration["Kafka:Topic"] ?? "sales-events";
+            // --- Leitura da configuração ---
+            var bootstrap = _configuration["Kafka:BootstrapServers"];
+            var topic = _configuration["Kafka:SalesTopic"];
+
+            if (string.IsNullOrEmpty(topic) || string.IsNullOrEmpty(bootstrap))
+            {
+                _logger.LogCritical("Configurações do Kafka (BootstrapServers ou SalesTopic) não encontradas.");
+                return;
+            }
 
             _logger.LogInformation("Consumidor de eventos de venda iniciando. BootstrapServers={Bootstrap}, Topic={Topic}",
                 bootstrap, topic);
@@ -42,28 +49,8 @@ namespace Ambev.DeveloperEvaluation.ORM.Services
                 EnablePartitionEof = false,
             };
 
-            using var consumer = new ConsumerBuilder<string, string>(consumerConfig)
-                .SetErrorHandler((_, e) =>
-                {
-                    _logger.LogWarning("Kafka client error: {Reason} (Code={Code}, IsFatal={IsFatal})",
-                        e.Reason, e.Code, e.IsFatal);
-                })
-                .Build();
-
-            using var registration = stoppingToken.Register(() =>
-            {
-                try { consumer.Close(); } catch {}
-            });
-
-            try
-            {
-                consumer.Subscribe(topic);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogCritical(ex, "Falha ao assinar o tópico {Topic}", topic);
-                throw;
-            }
+            using var consumer = new ConsumerBuilder<string, string>(consumerConfig).Build();
+            consumer.Subscribe(topic);
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -115,15 +102,6 @@ namespace Ambev.DeveloperEvaluation.ORM.Services
                     await Task.Delay(1000, stoppingToken);
                 }
             }
-
-            try
-            {
-                consumer.Close();
-            }
-            catch 
-            { 
-            }
-
             _logger.LogInformation("Consumidor de eventos de venda finalizando.");
         }
     }

@@ -1,7 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Serilog;
-using FluentValidation;
 using Ambev.DeveloperEvaluation.Application;
 using Ambev.DeveloperEvaluation.Common.HealthChecks;
 using Ambev.DeveloperEvaluation.Common.Logging;
@@ -10,6 +6,13 @@ using Ambev.DeveloperEvaluation.Common.Validation;
 using Ambev.DeveloperEvaluation.IoC;
 using Ambev.DeveloperEvaluation.ORM;
 using Ambev.DeveloperEvaluation.WebApi.Middleware;
+using FluentValidation;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Serializers;
+using Serilog;
 
 namespace Ambev.DeveloperEvaluation.WebApi;
 
@@ -23,6 +26,9 @@ public class Program
 
             WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
             builder.AddDefaultLogging();
+
+            // MONGO Guids como strings
+            BsonSerializer.RegisterSerializer(new GuidSerializer(BsonType.String));
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
