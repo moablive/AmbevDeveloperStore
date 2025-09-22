@@ -91,9 +91,10 @@ sequenceDiagram
     participant MongoDB
 
     Client->>+Controller: POST /api/sales
-    Controller->>MediatR: Envia CreateSaleCommand
+    Controller->>+MediatR: Envia CreateSaleCommand
     MediatR->>+Handler: Executa Handler
     Handler->>+Sale: new Sale() & Calcula Descontos
+    Sale-->>-Handler: Itens e descontos calculados
     Handler->>+WriteRepo: AddAsync(sale)
     WriteRepo->>+PostgreSQL: INSERT
     PostgreSQL-->>-WriteRepo: Confirma
